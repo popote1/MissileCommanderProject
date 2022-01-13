@@ -1,11 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using UnityEngine;
-using UnityEngine.Assertions.Comparers;
 using UnityEngine.Events;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
@@ -73,13 +69,12 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void RemoveActiveAttackMissile(AttackMissileComponent missile)
-    {
+    public void RemoveActiveAttackMissile(AttackMissileComponent missile) {
         _activeAttackMissile.Remove(missile);
         Score += ScoreByMissileDestory;
         OnMissileDestroy.Invoke();
     }
-
+    
     public void RemoveActiveDefenceMissile(DefenceMissileComponent missile)=> _activeDefanceMissile.Remove(missile);
 
     public void DestroyCity() {
@@ -95,10 +90,8 @@ public class GameManager : MonoBehaviour
     }
 
     
-    void Update()
-    {
-        switch (GameStat)
-        {
+    void Update() {
+        switch (GameStat) {
             case GameStats.InGame:
                 MissileTimer();
                 CheckEndGameConditions();
@@ -116,8 +109,7 @@ public class GameManager : MonoBehaviour
         if (_cityAlives <= 0) UIEndGame(false);
     }
 
-    private void MissileTimer()
-    {
+    private void MissileTimer() {
         if (_attackMissileToLaunch > 0) {
             _missileTimer += Time.deltaTime;
             if (_missileTimer > _missileDelay) {
@@ -138,8 +130,6 @@ public class GameManager : MonoBehaviour
         missile.SetMissileData(direction, AttackMissileSpeed,this);
         _activeAttackMissile.Add(missile);
         _attackMissileToLaunch--;
-
-
     }
 
     private void LaunchDefenceMissile() {
@@ -147,14 +137,12 @@ public class GameManager : MonoBehaviour
         Vector3 target = _camera.ViewportToWorldPoint(viewPort);
         Debug.DrawLine(_camera.transform.position, target, Color.green);
         Vector3 launcher = GetDefenceLauncher(target);
-        if (launcher == new Vector3(-1, -1, -1))
-        {
+        if (launcher == new Vector3(-1, -1, -1)) {
             Debug.Log(" plus de missile");
             return;
         }
         Vector3 direction = (target - launcher).normalized;
-        
-        
+
         DefenceMissileComponent missile =
             Instantiate(PrefabDefenceMissileComponent, launcher, Quaternion.identity);
         missile.transform.forward = direction;
@@ -166,16 +154,14 @@ public class GameManager : MonoBehaviour
         Vector3 launcher = new Vector3(-1,-1,-1);
         float distance = 1000;
         int index = 1;
-        for (int i = 0; i < DefenceMissileSpawnPoints.Length; i++)
-        {
+        for (int i = 0; i < DefenceMissileSpawnPoints.Length; i++) {
             if (Vector3.Distance(target, DefenceMissileSpawnPoints[i].transform.position) < distance&&DefenceMissileSpawnPoints[i].MissileInStock>0) {
                 distance = Vector3.Distance(target, DefenceMissileSpawnPoints[i].transform.position);
                 launcher = DefenceMissileSpawnPoints[i].transform.position;
                 index = i;
             }
         }
-        if (index == 0)
-        {
+        if (index == 0) {
             DefenceMissileSpawnPoints[index].MissileInStock--;
             TxtLauncher1.text = DefenceMissileSpawnPoints[index].MissileInStock.ToString();
         }
@@ -190,8 +176,7 @@ public class GameManager : MonoBehaviour
         return launcher;
     }
 
-    private Vector3 GetTargetCity()
-    {
+    private Vector3 GetTargetCity() {
         List<CityComponent> aliveCity =new List<CityComponent>();
         foreach (CityComponent city in MissileTarget) {
             if (city.IsAlive)aliveCity.Add(city);
@@ -202,22 +187,16 @@ public class GameManager : MonoBehaviour
     // UI Part
     //------------------------------------------------------------------------------------------------------------//
 
+    
+    /// <summary>
+    /// Rest all the game to start a newGame
+    /// </summary>
     public void UIClickStart() {
-        foreach (AttackMissileComponent missile in _activeAttackMissile) {
-            Destroy(missile.gameObject);
-        }
-        foreach (DefenceMissileComponent missile in _activeDefanceMissile) {
-            Destroy(missile.gameObject);
-        }
+        foreach (AttackMissileComponent missile in _activeAttackMissile) Destroy(missile.gameObject);
+        foreach (DefenceMissileComponent missile in _activeDefanceMissile) Destroy(missile.gameObject);
+        foreach (CityComponent city in MissileTarget) city.IsAlive = true;
+        foreach (LauncherComponent launcher in DefenceMissileSpawnPoints) launcher.MissileInStock = 5;
         
-        foreach (CityComponent city in MissileTarget) {
-            city.IsAlive = true;
-        }
-
-        foreach (LauncherComponent launcher in DefenceMissileSpawnPoints) {
-            launcher.MissileInStock = 5;
-        }
-
         _cityAlives = MissileTarget.Length;
         
         TxtLauncher1.text = DefenceMissileSpawnPoints[0].MissileInStock.ToString();
@@ -227,7 +206,6 @@ public class GameManager : MonoBehaviour
         _attackMissileToLaunch = AttackMissollaunch;
         _score = 0;
         TxtScore.text = _score.ToString();
-        
         PanelEndGame.SetActive(false);
         PanelMainMenu.SetActive(false);
         PanelPause.SetActive(false);
@@ -243,31 +221,26 @@ public class GameManager : MonoBehaviour
         GameStat = GameStats.InPause;
     }
 
-    public void UIUnPause()
-    {
+    public void UIUnPause() {
         Time.timeScale = 1;
         PanelPause.SetActive(false);
         PanelInGameUI.SetActive(true);
         GameStat = GameStats.InGame;
     }
 
-    public void UIEndGame(bool isWin)
-    {
+    public void UIEndGame(bool isWin) {
         PanelInGameUI.SetActive(false);
         PanelEndGame.SetActive(true);
-        foreach (LauncherComponent launch in DefenceMissileSpawnPoints)
-        {
+        foreach (LauncherComponent launch in DefenceMissileSpawnPoints) {
             Score += launch.MissileInStock*ScoreByMissileLeft;
         }
 
         TxtEndGameScore.text = "SCORE : " + Score;
-        if (isWin)
-        {
+        if (isWin) {
             TxtEndGameText.text = "WIN";
             TxtEndGameText.color = Color.green;
         }
-        else
-        {
+        else {
             TxtEndGameText.text = "GAME OVER";
             TxtEndGameText.color = Color.red;
         }
